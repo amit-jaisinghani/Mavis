@@ -1,67 +1,70 @@
+import config.AWSConfig;
+import config.Config;
+import config.LocalConfig;
+import formatter.FablesFormatter;
+import formatter.MLFTFormatter;
+import formatter.StoryDataFormatter;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import parser.JsonArrayParser;
+import parser.JsonObjectParser;
+import parser.Parser;
+import utils.ApplicationProperties;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 
 public class IndexStories {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
+
+        ApplicationProperties.loadProperties(
+                IndexStories.class.getResourceAsStream("aws.properties"), true);
         indexData();
     }
 
     private static void indexData() throws IOException {
-//        String host = "vpc-mavis-ess-zehi3iypikycqy7xtqpakl6awa.us-east-2.es.amazonaws.com";
-        String host = "localhost";
-        String index = "stories";
-        String type = "story";
+        //update config
+        Config config = new AWSConfig();
+        RestClient client = RestClient.builder(new HttpHost(config.getHost(), config.getPort()
+                , config.getScheme())).build();
+
+        //update id
         int id = 1;
-        Date date = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM-dd-yyyy");
 
-//        RestClient client = RestClient.builder(new HttpHost(host, 443, "https")).build();
-        RestClient client = RestClient.builder(new HttpHost(host, 9200, "http")).build();
-
+        //Update formatter
+        StoryDataFormatter storyDataFormatter = new FablesFormatter();
         ArrayList<JSONObject> list = getStories();
-
         for(JSONObject item : list){
-            item.put("subgenre", "FABLES");
-            item.put("date_added", simpleDateFormat.format(date));
-            String moral = item.get("moral").toString().toLowerCase();
-            moral = "The moral of story is " + moral;
-            item.replace("moral", moral);
-//            HttpEntity entity = new NStringEntity(item.toJSONString(), ContentType.APPLICATION_JSON);
-//            Response response = client.performRequest("PUT", "/" + index + "/" + type + "/" + id++ , Collections.emptyMap(), entity);
-            System.out.println(item);
+            if(item.get("story").toString().length() > 8000)
+                continue;
+            storyDataFormatter.format(item);
+            HttpEntity entity = new NStringEntity(item.toJSONString(), ContentType.APPLICATION_JSON);
+            Response response = client.performRequest("PUT", "/" + config.getIndex() + "/"
+                    + config.getType() + "/" + id++ , Collections.emptyMap(), entity);
+            System.out.println(response);
         }
         client.close();
     }
 
     private static ArrayList<JSONObject> getStories() {
-        JSONParser parser = new JSONParser();
         ArrayList<JSONObject> list = new ArrayList<>();
         try {
-//            Object obj = parser.parse(new FileReader("/home/amit/Documents/Marvis/stories.txt"));
-            Object obj = parser.parse(new FileReader("stories.txt"));
+            //update Parser
+            Parser parser = new JsonArrayParser();
 
-            // loop array
-            JSONArray msg = (JSONArray) obj;
-            for (Object aMsg : msg) {
-                list.add((JSONObject) aMsg);
-            }
-
+            //update file
+            list =  parser.parse("stories.txt");
+//            list =  parser.parse("mftd-stories.txt");
+//            list =  parser.parse("/home/amit/IdeaProjects/Mavis/mftd-stories.txt");
+//            list =  parser.parse("/home/amit/Documents/Marvis/stories.txt");
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }

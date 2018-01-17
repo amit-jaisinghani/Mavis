@@ -30,6 +30,11 @@
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
         </dependency>
+        <dependency>
+            <groupId>utilities</groupId>
+            <artifactId>application-properties</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -50,7 +55,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>indexing.IndexStories</mainClass>
+                            <mainClass>IndexStories</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

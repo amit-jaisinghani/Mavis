@@ -21,6 +21,8 @@ buildNumber.properties
 .idea/dictionaries
 .idea
 *.iml
+*.properties
+mftd-stories.txt
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
